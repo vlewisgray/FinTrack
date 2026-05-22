@@ -3,9 +3,7 @@
 import { useMemo, useState } from "react"
 
 import Sidebar from "../../components/sidebar"
-
 import StatCard from "../../components/stat-card"
-
 import SavingsGoalCard from "../../components/savings-goal-card"
 
 import {
@@ -62,55 +60,6 @@ export default function DashboardPage() {
       transactions
     )
 
-  const upcomingRecurring =
-    recurringTransactions
-      .filter(
-        (transaction) =>
-          transaction.active
-      )
-      .slice(0, 5)
-
-  const projectedExpenses =
-    recurringTransactions
-      .filter(
-        (transaction) =>
-          transaction.type ===
-            "expense" &&
-          transaction.active
-      )
-      .reduce(
-        (
-          acc,
-          transaction
-        ) =>
-          acc +
-          transaction.amount,
-        0
-      )
-
-  const projectedIncome =
-    recurringTransactions
-      .filter(
-        (transaction) =>
-          transaction.type ===
-            "income" &&
-          transaction.active
-      )
-      .reduce(
-        (
-          acc,
-          transaction
-        ) =>
-          acc +
-          transaction.amount,
-        0
-      )
-
-  const projectedBalance =
-    balance +
-    projectedIncome -
-    projectedExpenses
-
   const expenseTransactions =
     transactions.filter(
       (transaction) =>
@@ -160,81 +109,23 @@ export default function DashboardPage() {
       )
     }, [transactions])
 
-  const financialInsights =
-    useMemo(() => {
-      const insights: string[] = []
-
-      budgets.forEach((budget) => {
-        const percentage =
-          (budget.spent /
-            budget.limit) *
-          100
-
-        if (percentage >= 100) {
-          insights.push(
-            `${budget.category} budget exceeded`
-          )
-        } else if (
-          percentage >= 80
-        ) {
-          insights.push(
-            `${budget.category} nearing limit`
-          )
-        }
-      })
-
-      creditCards.forEach((card) => {
-        const utilization =
-          (card.used /
-            card.limit) *
-          100
-
-        if (utilization >= 80) {
-          insights.push(
-            `${card.name} utilization is high`
-          )
-        }
-      })
-
-      if (
-        projectedBalance < 0
-      ) {
-        insights.push(
-          "Projected cashflow deficit detected"
-        )
-      }
-
-      if (
-        expenses > income
-      ) {
-        insights.push(
-          "Expenses exceed income"
-        )
-      }
-
-      if (
-        insights.length === 0
-      ) {
-        insights.push(
-          "Financial health stable"
-        )
-      }
-
-      return insights
-    }, [
-      budgets,
-      creditCards,
-      projectedBalance,
-      expenses,
-      income
-    ])
+  const upcomingRecurring =
+    recurringTransactions
+      .filter(
+        (transaction) =>
+          transaction.active
+      )
+      .slice(0, 5)
 
   const handleSaveGoal = () => {
     if (
-      !goalName ||
-      !goalTarget ||
-      !goalDate
+      goalName.trim() === "" ||
+      goalTarget.trim() === ""
     ) {
+      alert(
+        "Please complete all fields"
+      )
+
       return
     }
 
@@ -247,7 +138,8 @@ export default function DashboardPage() {
 
       saved: 0,
 
-      targetDate: goalDate
+      targetDate:
+        goalDate || "No Deadline"
     })
 
     setGoalName("")
@@ -329,12 +221,6 @@ export default function DashboardPage() {
             value={`₱${weeklyExpenses.toLocaleString()}`}
             color="text-pink-400"
           />
-
-          <StatCard
-            title="Projected Balance"
-            value={`₱${projectedBalance.toLocaleString()}`}
-            color="text-cyan-400"
-          />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
@@ -385,80 +271,58 @@ export default function DashboardPage() {
 
           <div className="bg-zinc-900 rounded-3xl p-8">
             <h2 className="text-3xl font-bold mb-6">
-              Financial Insights
+              Expense Analytics
             </h2>
 
-            <div className="space-y-4">
-              {financialInsights.map(
-                (
-                  insight,
-                  index
-                ) => (
-                  <div
-                    key={index}
-                    className="bg-zinc-800 rounded-2xl p-5"
-                  >
-                    {insight}
-                  </div>
-                )
+            <div className="space-y-5">
+              {categoryAnalytics.map(
+                ([category, amount]) => {
+                  const percentage =
+                    totalExpenseAnalytics >
+                    0
+                      ? (
+                          (amount /
+                            totalExpenseAnalytics) *
+                          100
+                        ).toFixed(0)
+                      : "0"
+
+                  return (
+                    <div
+                      key={category}
+                      className="bg-zinc-800 p-5 rounded-2xl"
+                    >
+                      <div className="flex justify-between mb-2">
+                        <span>
+                          {category}
+                        </span>
+
+                        <span>
+                          ₱
+                          {amount.toLocaleString()}{" "}
+                          ({percentage}
+                          %)
+                        </span>
+                      </div>
+
+                      <div className="w-full bg-zinc-700 h-4 rounded-full overflow-hidden">
+                        <div
+                          className="bg-green-500 h-full"
+                          style={{
+                            width: `${Math.min(
+                              Number(
+                                percentage
+                              ),
+                              100
+                            )}%`
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                }
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold mb-6">
-            Expense Analytics
-          </h2>
-
-          <div className="space-y-5">
-            {categoryAnalytics.map(
-              ([category, amount]) => {
-                const percentage =
-                  totalExpenseAnalytics >
-                  0
-                    ? (
-                        (amount /
-                          totalExpenseAnalytics) *
-                        100
-                      ).toFixed(0)
-                    : "0"
-
-                return (
-                  <div
-                    key={category}
-                    className="bg-zinc-900 p-5 rounded-2xl"
-                  >
-                    <div className="flex justify-between mb-2">
-                      <span>
-                        {category}
-                      </span>
-
-                      <span>
-                        ₱
-                        {amount.toLocaleString()}{" "}
-                        ({percentage}
-                        %)
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-zinc-800 h-4 rounded-full overflow-hidden">
-                      <div
-                        className="bg-green-500 h-full"
-                        style={{
-                          width: `${Math.min(
-                            Number(
-                              percentage
-                            ),
-                            100
-                          )}%`
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              }
-            )}
           </div>
         </div>
 
@@ -568,6 +432,73 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+
+        {showModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div className="bg-zinc-900 p-8 rounded-3xl w-full max-w-md">
+              <h2 className="text-3xl font-bold mb-6">
+                Add Savings Goal
+              </h2>
+
+              <div className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Goal Name"
+                  value={goalName}
+                  onChange={(e) =>
+                    setGoalName(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-zinc-800 p-4 rounded-2xl"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Target Amount"
+                  value={goalTarget}
+                  onChange={(e) =>
+                    setGoalTarget(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-zinc-800 p-4 rounded-2xl"
+                />
+
+                <input
+                  type="date"
+                  value={goalDate}
+                  onChange={(e) =>
+                    setGoalDate(
+                      e.target.value
+                    )
+                  }
+                  className="w-full bg-zinc-800 p-4 rounded-2xl"
+                />
+
+                <div className="flex gap-4">
+                  <button
+                    onClick={
+                      handleSaveGoal
+                    }
+                    className="flex-1 bg-white text-black py-3 rounded-2xl font-semibold"
+                  >
+                    Save Goal
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      setShowModal(false)
+                    }
+                    className="flex-1 bg-zinc-800 py-3 rounded-2xl"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
